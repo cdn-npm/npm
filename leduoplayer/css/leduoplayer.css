@@ -1926,7 +1926,7 @@ f .leduoplayer.leduoplayer-mobile .leduoplayer-controller .leduoplayer-icons .le
 	-webkit-transition: .2s ease-in-out;
 	transition: .2s ease-in-out;
 	background: hsla(0, 0%, 100%, .5);
-	background: rgba(251, 114, 153, 0.92);
+	background: #3097fd;
 }
 
 .leduoplayer-controller .leduoplayer-icons .leduoplayer-toggle input+label:after,

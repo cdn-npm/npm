@@ -1,3 +1,76 @@
+class Storage {
+	constructor(name) {
+		this.name = 'storage';
+	}
+	//设置缓存
+	setItem(params) {
+		let obj = {
+			name: '',
+			value: '',
+			expires: "",
+			startTime: new Date().getTime() //记录何时将值存入缓存，毫秒级
+		}
+		let options = {};
+		//将obj和传进来的params合并
+		Object.assign(options, obj, params);
+		if (options.expires) {
+			//如果options.expires设置了的话
+			//以options.name为key，options为值放进去
+			localStorage.setItem(options.name, JSON.stringify(options));
+		} else {
+			//如果options.expires没有设置，就判断一下value的类型
+			let type = Object.prototype.toString.call(options.value);
+			//如果value是对象或者数组对象的类型，就先用JSON.stringify转一下，再存进去
+			if (Object.prototype.toString.call(options.value) == '[object Object]') {
+				options.value = JSON.stringify(options.value);
+			}
+			if (Object.prototype.toString.call(options.value) == '[object Array]') {
+				options.value = JSON.stringify(options.value);
+			}
+			localStorage.setItem(options.name, options.value);
+		}
+	}
+	//拿到缓存
+	getItem(name) {
+		let item = localStorage.getItem(name);
+		if (!item) {
+			return false;
+		}
+		//先将拿到的试着进行json转为对象的形式
+		try {
+			item = JSON.parse(item);
+		} catch (error) {
+			//如果不行就不是json的字符串，就直接返回
+			item = item;
+
+		}
+		//如果有startTime的值，说明设置了失效时间
+		if (item.startTime) {
+			let date = new Date().getTime();
+			//何时将值取出减去刚存入的时间，与item.expires比较，如果大于就是过期了，如果小于或等于就还没过期
+			if (date - item.startTime > item.expires) {
+				//缓存过期，清除缓存，返回false
+				localStorage.removeItem(name); 
+				return false;
+			} else {
+				//缓存未过期，返回值
+				return item.value;
+			}
+		} else {
+			//如果没有设置失效时间，直接返回值
+			return item;
+		}
+	}
+	//移出缓存
+	removeItem(name) {
+		localStorage.removeItem(name); 
+	}
+	//移出全部缓存
+	clear() {
+		localStorage.clear();
+	}
+}
+let storage = new Storage();
 var setIntervaler = 0;
 var uc1 = 0;
 var leduo = {
@@ -165,7 +238,7 @@ var leduo = {
 			setIntervaler = setInterval(() => {updateStats(randomNum(0,20), randomNum(1000,10000), randomNum(10000,100000))}, 1000);
 		},
 		'next': function() {
-			top.location.href = up.mylink + config.next;
+			top.location.href = config.next;
 		},
 		'try': function() {
 			if (up.trysee > 0 && config.group < config.group_x && config.group != '') {
@@ -198,8 +271,8 @@ var leduo = {
 			leduo.dp.seek(leduo.playtime);
 		},
 		'end': function() {
-			if(parent.parent.parent.MacPlayer.PlayLinkNext!=''){
-				top.location.href = parent.parent.parent.MacPlayer.PlayLinkNext;
+			if(config.next){
+				top.location.href = config.next;
 			}
 			// layer.msg("播放结束啦=。=");
 		},
@@ -504,23 +577,18 @@ var leduo = {
 		}
 	},
 	'setCookie': function(c_name, value, expireHours) {
-		var exdate = new Date();
-		exdate.setHours(exdate.getHours() + expireHours);
-		document.cookie = c_name + "=" + escape(value) + ((expireHours === null) ? "" : ";expires=" + exdate.toGMTString());
+		storage.setItem({
+				name: c_name,
+				value: value,
+				expires: expireHours*3600000
+		});
 	},
 	'getCookie': function(c_name) {
-		if (document.cookie.length > 0) {
-			c_start = document.cookie.indexOf(c_name + "=");
-			if (c_start !== -1) {
-				c_start = c_start + c_name.length + 1;
-				c_end = document.cookie.indexOf(";", c_start);
-				if (c_end === -1) {
-					c_end = document.cookie.length;
-				};
-				return unescape(document.cookie.substring(c_start, c_end));
-			}
+		if (storage.getItem(c_name)) {
+			return storage.getItem(c_name);
+		} else {
+			return '';
 		}
-		return "";
 	},
 	'formatTime': function(seconds) {
 		return [parseInt(seconds / 60 / 60), parseInt(seconds / 60 % 60), parseInt(seconds % 60)].join(":").replace(
@@ -555,15 +623,15 @@ var leduo = {
 	'endedHandler': function() {
 		leduo.setCookie("time_" + config.url, "", -1);
 		if (config.next != '') {
-			leduo.dp.notice("5s后,将自动为您播放下一集");
+			leduo.dp.notice("3s后,将自动为您播放下一集");
 			setTimeout(function() {
 				leduo.video.next();
-			}, 5 * 1000);
+			}, 3 * 1000);
 		} else {
 			leduo.dp.notice("视频播放已结束");
 			setTimeout(function() {
 				leduo.video.end();
-			}, 2 * 1000);
+			}, 3 * 1000);
 		}
 	},
 	'player': {
